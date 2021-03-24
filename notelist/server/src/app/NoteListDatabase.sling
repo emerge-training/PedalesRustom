@@ -74,8 +74,8 @@ func updateTables
     table_note.addStringColumn("title")
     table_note.addStringColumn("author")
     table_note.addStringColumn("description")
-    table_note.addStringColumn("timeStampAdded")
-    table_note.addStringColumn("timeStampLastUpdated")
+    table_note.addLongColumn("timeStampAdded")
+    table_note.addLongColumn("timeStampLastUpdated")
     updateTable(table_note)
 
 }

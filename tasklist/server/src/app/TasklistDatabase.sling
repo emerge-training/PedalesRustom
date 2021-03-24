@@ -32,6 +32,9 @@ func forContext(ctx as LoggingContext) static as this
     return v 
 }
 
+
+
+
 func updateTable(table as SQLTableInfo)
 {
     if not table:
@@ -42,12 +45,15 @@ func updateTable(table as SQLTableInfo)
         Error.throw("failedToUpdateTable", table.getName())
 }
 
+
 func updateTables
 {
     var task = SQLTableInfo.forName(TASK)
     task.addStringKeyColumn("id")
     task.addStringColumn("name")
     task.addStringColumn("description")
+    task.addLongColumn("timeStampAdded")
+    task.addLongColumn("timeStampLastUpdated")
     updateTable(task)
 
 }
