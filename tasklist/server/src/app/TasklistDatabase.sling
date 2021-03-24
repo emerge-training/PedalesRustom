@@ -83,7 +83,7 @@ func deleteTask(id as string) as bool
     return db.executeSync(db.prepareDeleteStatementSync(TASK, criteria.toDynamicMap()))
 }
 
-func getTask as DynamicMap
+func getTasks as DynamicMap
 {
     var v = new vector<Task>
     var it = assert db.querySync(db.prepareQueryAllStatementSync(TASK)):
