@@ -1,0 +1,189 @@
+/*
+    Author : Tom Ramos Pedales 
+    import jkop library
+    log,sqlite,mysql,sql,env,time
+*/
+import jk.log
+import jk.sqlite
+import jk.mysql
+import jk.sql
+import jk.env
+import jk.time
+
+
+class:
+
+
+// note prop 
+const NOTE_TABLE  = "notes"
+const NOTE_DATABASE = "note_database"
+
+//model notes
+model Note
+{
+    noteId as string
+    title as string
+    author as string
+    description as string
+    timeStampAdded as long
+    timeStampLastUpdated as long
+}
+
+/*DB engine */
+pvar db as MySQLDatabase
+
+/*Logging Context
+    where you can get the database, and the connection 
+*/
+func forContext(ctx as LoggingContext) static as this
+{
+    var cstr = EnvironmentVariable.get(NOTE_DATABASE)
+    Log.debug(ctx, "Opening database connection: `" ..cstr.. "'")
+    db = MySQLDatabase.forConnectionStringSync(ctx,cstr)
+    if not db:
+        Error.throw("failedToConnectToDatabase", cstr)
+    var v = new this()
+    v.setDb(db)
+    return v 
+}
+
+/*Logging Context
+   update table fron sqlTableInfo
+*/
+func updateTable(table as SQLTableInfo)
+{
+    if not table:
+        Error.throw("nullTable","updateTable")
+    if not db: 
+        Error.throw("nullDb", "updateTable")
+    if not db.ensureTableExistsSync(table):
+        Error.throw("failedToUpdateTable", table.getName())
+}
+
+
+/*Logging Context
+   update table models 
+*/
+func updateTables
+{
+    /*Logging Context
+        Example for Note Models 
+    */
+    var table_note = SQLTableInfo.forName(NOTE_TABLE)
+    table_note.addStringKeyColumn("noteId")
+    table_note.addStringColumn("title")
+    table_note.addStringColumn("author")
+    table_note.addStringColumn("description")
+    table_note.addStringColumn("timeStampAdded")
+    table_note.addStringColumn("timeStampLastUpdated")
+    updateTable(table_note)
+
+}
+
+/* 
+    CRUD 
+    - addNote
+    - updateNote
+    - deleteNote
+    - fetch/Get Note 
+    Note : An assertion is a boolean expression at a specific point in a program which
+           will be true unless there is a bug in the program.
+*/
+
+func addNote(note as Note) as Note
+{   
+    
+    //assert 
+    assert note
+    
+    //set an example id : 1 to the note model
+    note.setNoteId("1")
+
+    //set in TimeStampAddedValue (from import jk.time) : CurrentTime to the note model
+    note.setTimeStampAddedValue(SystemClock.asUTCSeconds())
+
+    /*
+        Assert
+        db.executeSync => prepareInsertStatement for insert with table and model
+    */
+    assert db.executeSync(db.prepareInsertStatementSync(NOTE_TABLE,note.toDynamicMap()))
+    
+    //return as Note
+    return note
+}
+
+func updateNote(id as string, note as Note) as bool
+{
+    //assert 
+    assert note
+
+    //update column : example this TimeStampLastUpdatedValue 
+    note.setTimeStampLastUpdatedValue(SystemClock.asUTCSeconds())
+
+    //criteria or data want to update example where using id of note model
+    var criteria = new Note()
+    criteria.setNoteId(id)
+
+    /*
+        return as boolean
+        db.executeSync => prepareUpdateStatementSync for update with table and model
+    */
+    return db.executeSync(db.prepareUpdateStatementSync(NOTE_TABLE, criteria.toDynamicMap(), note.toDynamicMap()))
+}
+
+
+
+func deleteNote(id as string) as bool
+{
+    //criteria or data want to update example where using id of note model
+    var criteria = new Note()
+    criteria.setNoteId(id)
+    /*
+        return as boolean
+        db.executeSync => prepareDeleteStatementSync for update with table and model
+    */
+    return db.executeSync(db.prepareDeleteStatementSync(NOTE_TABLE, criteria.toDynamicMap()))
+}
+
+
+
+
+/**
+Fetch data as a dynamicmap which means 
+ */
+
+ func getNote as DynamicMap
+ {
+    //vector is a kind of array
+    var vec = new vector<Note>
+
+    /**
+        fetch data using prepareQueryAllStatementSync from table "notes" 
+        when the assert boolean false it return as null
+    */
+    var data = assert db.querySync(db.prepareQueryAllStatementSync(NOTE_TABLE)):
+        return null
+    while data{
+        //assign each object form variable object
+        var object  = data.next()
+        //check if not object if true then break else continue and assign data from variable note using <model>.JsonObject(object)
+        if not object:
+            break
+        var note = Note.forJsonObject(object)
+        if not note:
+            continue
+        // add to vector array
+        vec += note
+    }
+ }
+
+//Close Synchronization from db
+func close
+{
+    if db:
+        db.closeSync()
+    db = null
+}
+
+
+
